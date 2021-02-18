@@ -9,7 +9,7 @@ logger.info('Start PVOutput datalogger')
 
 while True:
     try:
-    	pw=hlp.getPowerwallData(cfg.PowerwallIP)
+        pw=hlp.getPowerwallData(cfg.PowerwallIP)
         soc=hlp.getPowerwallSOCData(cfg.PowerwallIP)
         if (pw!=False and soc!=False):
             lpvPower=float(pw['solar']['instant_power'])
@@ -24,7 +24,7 @@ while True:
         else:
             logger.info('No data received, retrying')
         time.sleep(5)
-        
+
     except StandardError as e:
         logger.info('Main: Sleeping 5 minutes ' + str(e) )
         time.sleep(60*5)

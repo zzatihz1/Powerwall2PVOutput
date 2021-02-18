@@ -38,7 +38,7 @@ def insertdb(sqlite_file, values):
         conn.close()
     except StandardError as e:
         logger.info("insertdb: " + str(e))
-        return False     
+        return False
 
 def get_sqlite_data(sqlite_file, sqldate):
     try:
@@ -70,20 +70,20 @@ def delete_sqlite_data(sqlite_file, days):
         return False
 
 def avg(l):
-    return sum(l,0.00)/len(l) 
+    return sum(l,0.00)/len(l)
 
 def getPowerwallData(PowerwallIP):
     try:
         response = urllib.urlopen('http://'+PowerwallIP+'/api/meters/aggregates')
         webz = response.read()
-    	stuff = json.loads(webz)
-    	return stuff
+        stuff = json.loads(webz)
+        return stuff
     except StandardError as e:
         logger.info("getPowerwallData: " + str(e))
         return False
 
 def getPowerwallSOCData(PowerwallIP):
-    try:   
+    try:
         response = urllib.urlopen('http://'+PowerwallIP+'/api/system_status/soe')
         webz = response.read()
         soc = json.loads(webz)
@@ -118,7 +118,7 @@ class Connection():
         return response.read()
 
     def add_status(self, date, time, energy_exp=None, power_exp=None, energy_imp=None, power_imp=None, temp=None, vdc=None, battery_flow=None, load_power=None, soc=None, site_power=None, load_voltage=None, ext_power_exp=None, cumulative=False):
-        
+
         path = '/service/r2/addstatus.jsp'
         params = {
                 'd': date,
@@ -141,13 +141,13 @@ class Connection():
         if load_power:
             params['v8'] = load_power
         if soc:
-            params['v9'] = soc    
+            params['v9'] = soc
         if site_power:
             params['v10'] = site_power
         if load_voltage:
             params['v11'] = load_voltage
         if ext_power_exp:
-            params['v12'] = ext_power_exp    
+            params['v12'] = ext_power_exp
         if cumulative:
             params['c1'] = 1
         params = urllib.urlencode(params)
@@ -158,7 +158,7 @@ class Connection():
             raise ValueError(response.read())
         if response.status != 200:
             raise StandardError(response.read())
-    
+
     def make_request(self, method, path, params=None):
         conn = httplib.HTTPConnection(self.host)
         headers = {

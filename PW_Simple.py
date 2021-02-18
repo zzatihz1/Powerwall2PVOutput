@@ -10,7 +10,7 @@ logger.info('Start PVOutput simple')
 
 while True:
     try:
-    	lpvPower=[]
+        lpvPower=[]
         lpvVoltage=[]
         lpvBatteryFlow=[]
         lpvLoadPower=[]
@@ -35,7 +35,7 @@ while True:
             i=i+1
             time.sleep(5)
 
-        if (len(lpvPower)!=0):    
+        if (len(lpvPower)!=0):
             pvPower=hlp.avg(lpvPower)
             pvVoltage=hlp.avg(lpvVoltage)
             pvBatteryFlow=hlp.avg(lpvBatteryFlow)
