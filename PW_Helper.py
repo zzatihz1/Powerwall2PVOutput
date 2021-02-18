@@ -5,9 +5,9 @@ import urllib.request, urllib.parse, urllib.error
 import http.client
 import requests
 import os
+import ssl
 import json
 import sys
-import psycopg2
 import sqlite3
 import logging
 from logging.handlers import RotatingFileHandler
