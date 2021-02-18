@@ -3,6 +3,7 @@ import datetime
 import time
 import urllib.request, urllib.parse, urllib.error
 import http.client
+import requests
 import os
 import json
 import sys
@@ -13,6 +14,10 @@ from logging.handlers import RotatingFileHandler
 from logging import handlers
 
 logger = logging.getLogger(__name__)
+
+# Powerwall uses a self signed cert
+from urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 def setup_logging(log_file):
     log = logging.getLogger('')
@@ -72,22 +77,32 @@ def delete_sqlite_data(sqlite_file, days):
 def avg(l):
     return sum(l,0.00)/len(l)
 
-def getPowerwallData(PowerwallIP):
+def getSession(PowerwallIP, PowerwallEmail, PowerwallPassword):
+    auth_data = {
+        "username":"customer",
+        "password":PowerwallPassword,
+        "email":PowerwallEmail,
+        "force_sm_off":False
+    }
+    session = requests.Session()
+    response = session.post('https://'+PowerwallIP+'/api/login/Basic', json=auth_data, verify=False)
+    if response.status_code != 200:
+        logger.error("getSession: " + str(response.status_code))
+        raise ValueError('getSession failed to log in to the Powerwall. check your email and password')
+    return session
+
+def getPowerwallData(PowerwallIP, session):
     try:
-        response = urllib.request.urlopen('http://'+PowerwallIP+'/api/meters/aggregates')
-        webz = response.read()
-        stuff = json.loads(webz)
-        return stuff
+        response = session.get('https://'+PowerwallIP+'/api/meters/aggregates', verify=False)
+        return response.json()
     except Exception as e:
         logger.info("getPowerwallData: " + str(e))
         return False
 
-def getPowerwallSOCData(PowerwallIP):
+def getPowerwallSOCData(PowerwallIP, session):
     try:
-        response = urllib.request.urlopen('http://'+PowerwallIP+'/api/system_status/soe')
-        webz = response.read()
-        soc = json.loads(webz)
-        return soc
+        response = session.get('https://'+PowerwallIP+'/api/system_status/soe', verify=False)
+        return response.json()
     except Exception as e:
         logger.info("getPowerwallSOCData: " + str(e))
         return False
