@@ -7,10 +7,14 @@ hlp.setup_logging(cfg.log_file)
 logger = hlp.logging.getLogger(__name__)
 logger.info('Start PVOutput datalogger')
 
+ssn=None
+
 while True:
     try:
-    	pw=hlp.getPowerwallData(cfg.PowerwallIP)
-        soc=hlp.getPowerwallSOCData(cfg.PowerwallIP)
+        if not ssn:
+            ssn = hlp.getSession(cfg.PowerwallIP, cfg.PowerwallEmail, cfg.PowerwallPassword)
+        pw=hlp.getPowerwallData(cfg.PowerwallIP, ssn)
+        soc=hlp.getPowerwallSOCData(cfg.PowerwallIP, ssn)
         if (pw!=False and soc!=False):
             lpvPower=float(pw['solar']['instant_power'])
             lpvVoltage=float(pw['solar']['instant_average_voltage'])
@@ -24,7 +28,7 @@ while True:
         else:
             logger.info('No data received, retrying')
         time.sleep(5)
-        
-    except StandardError as e:
-        logger.info('Main: Sleeping 5 minutes ' + str(e) )
+
+    except Exception as e:
+        logger.info('Main: Sleeping 5 minutes: ' + str(e) )
         time.sleep(60*5)

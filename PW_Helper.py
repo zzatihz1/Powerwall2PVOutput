@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import datetime
 import time
-import urllib
-import httplib
+import urllib.request, urllib.parse, urllib.error
+import http.client
+import requests
 import os
 import ssl
 import json
@@ -14,8 +15,9 @@ from logging import handlers
 
 logger = logging.getLogger(__name__)
 
-if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)):
-    ssl._create_default_https_context = ssl._create_unverified_context
+# Powerwall uses a self signed cert
+from urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 def setup_logging(log_file):
     log = logging.getLogger('')
@@ -39,9 +41,9 @@ def insertdb(sqlite_file, values):
         c.execute(sql, (values))
         conn.commit()
         conn.close()
-    except StandardError as e:
+    except Exception as e:
         logger.info("insertdb: " + str(e))
-        return False     
+        return False
 
 def get_sqlite_data(sqlite_file, sqldate):
     try:
@@ -53,7 +55,7 @@ def get_sqlite_data(sqlite_file, sqldate):
         rows = c.fetchall()
         conn.commit()
         conn.close()
-    except StandardError as e:
+    except Exception as e:
         logger.info("get_sqlite_data: " + str(e))
         return False
 
@@ -68,30 +70,40 @@ def delete_sqlite_data(sqlite_file, days):
         c.execute(sql)
         conn.commit()
         conn.close()
-    except StandardError as e:
+    except Exception as e:
         logger.info("delete_sqlite_data: " + str(e))
         return False
 
 def avg(l):
-    return sum(l,0.00)/len(l) 
+    return sum(l,0.00)/len(l)
 
-def getPowerwallData(PowerwallIP):
+def getSession(PowerwallIP, PowerwallEmail, PowerwallPassword):
+    auth_data = {
+        "username":"customer",
+        "password":PowerwallPassword,
+        "email":PowerwallEmail,
+        "force_sm_off":False
+    }
+    session = requests.Session()
+    response = session.post('https://'+PowerwallIP+'/api/login/Basic', json=auth_data, verify=False)
+    if response.status_code != 200:
+        logger.error("getSession: " + str(response.status_code))
+        raise ValueError('getSession failed to log in to the Powerwall. check your email and password')
+    return session
+
+def getPowerwallData(PowerwallIP, session):
     try:
-        response = urllib.urlopen('https://'+PowerwallIP+'/api/meters/aggregates')
-        webz = response.read()
-    	stuff = json.loads(webz)
-    	return stuff
-    except StandardError as e:
+        response = session.get('https://'+PowerwallIP+'/api/meters/aggregates', verify=False)
+        return response.json()
+    except Exception as e:
         logger.info("getPowerwallData: " + str(e))
         return False
 
-def getPowerwallSOCData(PowerwallIP):
-    try:   
-        response = urllib.urlopen('https://'+PowerwallIP+'/api/system_status/soe')
-        webz = response.read()
-        soc = json.loads(webz)
-        return soc
-    except StandardError as e:
+def getPowerwallSOCData(PowerwallIP, session):
+    try:
+        response = session.get('https://'+PowerwallIP+'/api/system_status/soe', verify=False)
+        return response.json()
+    except Exception as e:
         logger.info("getPowerwallSOCData: " + str(e))
         return False
 
@@ -108,7 +120,7 @@ class Connection():
             params['d'] = date
         if time:
             params['t'] = time
-        params = urllib.urlencode(params)
+        params = urllib.parse.urlencode(params)
 
         response = self.make_request("GET", path, params)
 
@@ -116,12 +128,12 @@ class Connection():
             # Initialise a "No status found"
             return "%s,00:00,,,,,,," % datetime.datetime.now().strftime('%Y%m%d')
         if response.status != 200:
-            raise StandardError(response.read())
+            raise Exception(response.read())
 
         return response.read()
 
     def add_status(self, date, time, energy_exp=None, power_exp=None, energy_imp=None, power_imp=None, temp=None, vdc=None, battery_flow=None, load_power=None, soc=None, site_power=None, load_voltage=None, ext_power_exp=None, cumulative=False):
-        
+
         path = '/service/r2/addstatus.jsp'
         params = {
                 'd': date,
@@ -144,26 +156,26 @@ class Connection():
         if load_power:
             params['v8'] = load_power
         if soc:
-            params['v9'] = soc    
+            params['v9'] = soc
         if site_power:
             params['v10'] = site_power
         if load_voltage:
             params['v11'] = load_voltage
         if ext_power_exp:
-            params['v12'] = ext_power_exp    
+            params['v12'] = ext_power_exp
         if cumulative:
             params['c1'] = 1
-        params = urllib.urlencode(params)
+        params = urllib.parse.urlencode(params)
 
         response = self.make_request('POST', path, params)
 
         if response.status == 400:
             raise ValueError(response.read())
         if response.status != 200:
-            raise StandardError(response.read())
-    
+            raise Exception(response.read())
+
     def make_request(self, method, path, params=None):
-        conn = httplib.HTTPConnection(self.host)
+        conn = http.client.HTTPConnection(self.host)
         headers = {
                 'Content-type': 'application/x-www-form-urlencoded',
                 'Accept': 'text/plain',

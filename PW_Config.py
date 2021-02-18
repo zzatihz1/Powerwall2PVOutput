@@ -3,6 +3,8 @@ pvo_host= "pvoutput.org"
 pvo_key = ""
 pvo_systemid = ""
 PowerwallIP = ""
+PowerwallEmail = ""
+PowerwallPassword = ""
 extData = True
 log_file = "pvo.log"
 
