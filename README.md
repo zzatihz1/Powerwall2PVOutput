@@ -1,7 +1,7 @@
 # Powerwall2PVOutput
 Send Tesla Powerwall 2 data to PVOutput
 
-#### Note code has been updated to work with https, firmware versions 1.19+
+#### Note code has been updated to work with basic auth, firmware versions 20.49.0+
 
 2 options  
 -Datalogger - Collects data on site and then send to PVO, allowing for internet outages or PVO outages  
