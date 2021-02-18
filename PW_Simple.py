@@ -62,6 +62,6 @@ while True:
         else:
             logger.info('No data sent')
 
-    except StandardError as e:
+    except Exception as e:
         logger.info('Main: Sleeping 5 minutes ' + str(e) )
         time.sleep(60*5)

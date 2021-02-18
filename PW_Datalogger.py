@@ -25,6 +25,6 @@ while True:
             logger.info('No data received, retrying')
         time.sleep(5)
 
-    except StandardError as e:
+    except Exception as e:
         logger.info('Main: Sleeping 5 minutes ' + str(e) )
         time.sleep(60*5)

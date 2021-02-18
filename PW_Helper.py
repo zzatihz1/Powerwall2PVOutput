@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import datetime
 import time
-import urllib
-import httplib
+import urllib.request, urllib.parse, urllib.error
+import http.client
 import os
 import json
 import sys
@@ -36,7 +36,7 @@ def insertdb(sqlite_file, values):
         c.execute(sql, (values))
         conn.commit()
         conn.close()
-    except StandardError as e:
+    except Exception as e:
         logger.info("insertdb: " + str(e))
         return False
 
@@ -50,7 +50,7 @@ def get_sqlite_data(sqlite_file, sqldate):
         rows = c.fetchall()
         conn.commit()
         conn.close()
-    except StandardError as e:
+    except Exception as e:
         logger.info("get_sqlite_data: " + str(e))
         return False
 
@@ -65,7 +65,7 @@ def delete_sqlite_data(sqlite_file, days):
         c.execute(sql)
         conn.commit()
         conn.close()
-    except StandardError as e:
+    except Exception as e:
         logger.info("delete_sqlite_data: " + str(e))
         return False
 
@@ -74,21 +74,21 @@ def avg(l):
 
 def getPowerwallData(PowerwallIP):
     try:
-        response = urllib.urlopen('http://'+PowerwallIP+'/api/meters/aggregates')
+        response = urllib.request.urlopen('http://'+PowerwallIP+'/api/meters/aggregates')
         webz = response.read()
         stuff = json.loads(webz)
         return stuff
-    except StandardError as e:
+    except Exception as e:
         logger.info("getPowerwallData: " + str(e))
         return False
 
 def getPowerwallSOCData(PowerwallIP):
     try:
-        response = urllib.urlopen('http://'+PowerwallIP+'/api/system_status/soe')
+        response = urllib.request.urlopen('http://'+PowerwallIP+'/api/system_status/soe')
         webz = response.read()
         soc = json.loads(webz)
         return soc
-    except StandardError as e:
+    except Exception as e:
         logger.info("getPowerwallSOCData: " + str(e))
         return False
 
@@ -105,7 +105,7 @@ class Connection():
             params['d'] = date
         if time:
             params['t'] = time
-        params = urllib.urlencode(params)
+        params = urllib.parse.urlencode(params)
 
         response = self.make_request("GET", path, params)
 
@@ -113,7 +113,7 @@ class Connection():
             # Initialise a "No status found"
             return "%s,00:00,,,,,,," % datetime.datetime.now().strftime('%Y%m%d')
         if response.status != 200:
-            raise StandardError(response.read())
+            raise Exception(response.read())
 
         return response.read()
 
@@ -150,17 +150,17 @@ class Connection():
             params['v12'] = ext_power_exp
         if cumulative:
             params['c1'] = 1
-        params = urllib.urlencode(params)
+        params = urllib.parse.urlencode(params)
 
         response = self.make_request('POST', path, params)
 
         if response.status == 400:
             raise ValueError(response.read())
         if response.status != 200:
-            raise StandardError(response.read())
+            raise Exception(response.read())
 
     def make_request(self, method, path, params=None):
-        conn = httplib.HTTPConnection(self.host)
+        conn = http.client.HTTPConnection(self.host)
         headers = {
                 'Content-type': 'application/x-www-form-urlencoded',
                 'Accept': 'text/plain',
