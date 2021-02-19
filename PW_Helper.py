@@ -130,7 +130,7 @@ class Connection():
         if response.status != 200:
             raise Exception(response.read())
 
-        return response.read()
+        return response.read().decode()
 
     def add_status(self, date, time, energy_exp=None, power_exp=None, energy_imp=None, power_imp=None, temp=None, vdc=None, battery_flow=None, load_power=None, soc=None, site_power=None, load_voltage=None, ext_power_exp=None, cumulative=False):
 
